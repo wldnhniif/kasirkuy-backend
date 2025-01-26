@@ -31,7 +31,8 @@ load_dotenv()
 
 # Validate required environment variables
 required_env_vars = [
-    'JWT_SECRET_KEY'
+    'JWT_SECRET_KEY',
+    'FRONTEND_URL'
 ]
 
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
@@ -50,16 +51,19 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
+# Get frontend URLs
+FRONTEND_URL = os.getenv('FRONTEND_URL')
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    FRONTEND_URL,
+    FRONTEND_URL.replace('https://', 'https://www-'),
+    FRONTEND_URL.replace('https://', 'https://git-')
+]
+
 # Configure CORS with cookie support
 CORS(app, resources={
     r"/*": {  # Allow CORS for all routes
-        "origins": [
-            "http://localhost:3000",
-            "https://kasirkuy.vercel.app",
-            "https://kasirkuy-git-main-wildan-hanifs-projects.vercel.app",
-            "https://kasirkuy-wildan-hanifs-projects.vercel.app",
-            "https://kasirkuy-backend.vercel.app"
-        ],
+        "origins": ALLOWED_ORIGINS,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
         "expose_headers": ["Content-Range", "X-Content-Range"],
@@ -73,13 +77,7 @@ CORS(app, resources={
 @app.after_request
 def add_cors_headers(response):
     origin = request.headers.get('Origin')
-    if origin in [
-        "http://localhost:3000",
-        "https://kasirkuy.vercel.app",
-        "https://kasirkuy-git-main-wildan-hanifs-projects.vercel.app",
-        "https://kasirkuy-wildan-hanifs-projects.vercel.app",
-        "https://kasirkuy-backend.vercel.app"
-    ]:
+    if origin in ALLOWED_ORIGINS:
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -150,11 +148,11 @@ talisman = Talisman(
     session_cookie_http_only=True,
     strict_transport_security=True,
     content_security_policy={
-        'default-src': "'self' https://*.vercel.app",
-        'img-src': "'self' data: blob: https://*.vercel.app",
-        'script-src': "'self' https://*.vercel.app",
-        'style-src': "'self' 'unsafe-inline' https://*.vercel.app",
-        'connect-src': "'self' https://*.vercel.app"
+        'default-src': f"'self' {FRONTEND_URL} https://*.vercel.app",
+        'img-src': f"'self' data: blob: {FRONTEND_URL} https://*.vercel.app",
+        'script-src': f"'self' {FRONTEND_URL} https://*.vercel.app",
+        'style-src': f"'self' 'unsafe-inline' {FRONTEND_URL} https://*.vercel.app",
+        'connect-src': f"'self' {FRONTEND_URL} https://*.vercel.app https://*.neon.tech"
     }
 )
 
